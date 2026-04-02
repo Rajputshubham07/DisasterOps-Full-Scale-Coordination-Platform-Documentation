@@ -1,7 +1,18 @@
-# Disaster Incidents API
+## 🖼️ System Snapshots
 
-## Overview
-A Node.js backend using Express.js and MongoDB to manage disaster incidents.
+### 🔐 Tactical "Mission Briefing" HUD
+![Tactical Login](screenshots/login.png)
+
+### 🎖 Service Commissioning Dashboard
+![Service Commissioning](screenshots/service_commissioning.png)
+
+### 🚨 Citizen SOS Broadcast Console
+![Citizen Dashboard](screenshots/citizen_dashboard.png)
+
+### 🏛 Admin Global Command Center
+![Admin HUD](screenshots/admin_hud.png)
+
+---
 
 ### Project Structure
 ```text
