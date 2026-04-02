@@ -25,6 +25,31 @@ body {
   background-color: var(--bg-color);
   color: var(--text-primary);
   overflow: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Tactical Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 .app-container {
@@ -44,6 +69,9 @@ body {
   z-index: 1000;
   box-shadow: var(--glass-shadow);
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scroll-padding-bottom: 2rem;
 }
 
 .map-container {
@@ -58,11 +86,19 @@ body {
 }
 
 .glass-panel {
-  background: rgba(33, 38, 45, 0.6);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.25rem;
+  background: rgba(33, 38, 45, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 h1 {
@@ -94,9 +130,27 @@ h2 {
 }
 
 @keyframes pulse-red {
-  0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(248, 81, 73, 0); }
-  100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0.7); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(248, 81, 73, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.blink {
+  animation: blink 1s ease-in-out infinite;
 }
 
 .alert-banner {

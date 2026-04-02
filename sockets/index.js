@@ -85,6 +85,18 @@ const notifyNearbyUsers = (io, incident) => {
   if (type === 'fire') {
     console.log('Emitting to fire_engine room');
     io.to('fire_engine').emit('red_alert', incident);
+  } else if (type === 'flood') {
+    io.to('ndrf').emit('red_alert', incident);
+  } else if (type === 'earthquake') {
+    io.to('sdrf').emit('red_alert', incident);
+  } else if (type === 'gas_leak') {
+    io.to('hazmat_team').emit('red_alert', incident);
+  } else if (type === 'trapped') {
+    io.to('rescue_squad').emit('red_alert', incident);
+  } else if (type === 'missing_person') {
+    io.to('cid').emit('red_alert', incident);
+  } else if (type === 'cyber_threat') {
+    io.to('cyber_cell').emit('red_alert', incident);
   } else if (type === 'medical' || type === 'accident') {
     console.log('Emitting to ambulance rooms');
     io.to('gov_ambulance').emit('red_alert', incident);

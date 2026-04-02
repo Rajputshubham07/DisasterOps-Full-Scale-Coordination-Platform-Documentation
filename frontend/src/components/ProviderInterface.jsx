@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import axios from 'axios';
-import { MapPin, Phone, MessageSquare, Navigation, CheckCircle, Clock, AlertCircle, FileVideo, FileImage, ShieldCheck, CheckCheck } from 'lucide-react';
+import { MapPin, Phone, MessageSquare, Navigation, CheckCircle, Clock, AlertCircle, FileVideo, FileImage, ShieldCheck, CheckCheck, Flame, Droplets, Activity, Wind, Shield, Search, Terminal, AlertTriangle, Hammer, Biohazard, Mountain, Zap, ShieldAlert, Target } from 'lucide-react';
 import MapComponent from './Map';
 
 export default function ProviderInterface({ incidents, userLocation, alerts, providerType, onSendMessage, messages = [] }) {
@@ -8,24 +8,41 @@ export default function ProviderInterface({ incidents, userLocation, alerts, pro
   const [msgText, setMsgText] = useState('');
   const [showMessenger, setShowMessenger] = useState(false);
 
-  // Derive selectedIncident from the current incidents prop to ensure real-time status updates
   const selectedIncident = useMemo(() => {
     return incidents.find(inc => inc._id === selectedId);
   }, [incidents, selectedId]);
 
-  // Filter SOS messages based on relevant provider type
+  const getDisasterIcon = (type) => {
+    switch(type) {
+      case 'fire': return <Flame size={20} />;
+      case 'flood': return <Droplets size={20} />;
+      case 'earthquake': return <Activity size={20} />;
+      case 'gas_leak': return <Biohazard size={20} />;
+      case 'trapped': return <Mountain size={20} />;
+      case 'medical': return <Activity size={20} />;
+      case 'accident': return <AlertTriangle size={20} />;
+      case 'crime': return <Shield size={20} />;
+      case 'missing_person': return <Search size={20} />;
+      case 'cyber_threat': return <Terminal size={20} />;
+      default: return <AlertCircle size={20} />;
+    }
+  };
+
   const sosMessages = [...incidents]
     .filter(inc => {
-      // Logic mapping disaster types to service providers
       if (providerType === 'fire_engine') return inc.type === 'fire';
       if (providerType === 'ndrf') return inc.type === 'flood';
+      if (providerType === 'sdrf') return inc.type === 'earthquake';
+      if (providerType === 'hazmat_team') return inc.type === 'gas_leak';
+      if (providerType === 'rescue_squad') return inc.type === 'trapped';
+      if (providerType === 'cid') return inc.type === 'missing_person';
+      if (providerType === 'cyber_cell') return inc.type === 'cyber_threat';
       if (providerType.includes('ambulance')) return inc.type === 'accident' || inc.type === 'medical';
-      if (providerType === 'police') return (inc.type === 'crime' || inc.type === 'other');
-      return true; // Default to all if no specific mapping
+      if (providerType === 'police') return (inc.type === 'crime');
+      return true;
     })
     .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
     .map(inc => {
-      // Check for media in description
       const mediaMatch = inc.description.match(/\[Attached Media: (.*?)\]/);
       const fileName = mediaMatch ? mediaMatch[1] : null;
       const cleanDesc = inc.description.replace(/\[Attached Media: .*?\]/, '').trim();
@@ -43,7 +60,6 @@ export default function ProviderInterface({ incidents, userLocation, alerts, pro
   const handleAcceptMission = async (id) => {
      try {
        await axios.put(`http://localhost:5005/api/incidents/${id}/status`, { status: 'in-progress' });
-       // Socket 'status_updated' will trigger state update in App.jsx
      } catch (err) {
        console.error('Error accepting mission:', err);
      }
@@ -52,7 +68,7 @@ export default function ProviderInterface({ incidents, userLocation, alerts, pro
   const handleResolveMission = async (id) => {
     try {
       await axios.put(`http://localhost:5005/api/incidents/${id}/status`, { status: 'resolved' });
-      setSelectedId(null); // Clear overlay after resolution
+      setSelectedId(null);
     } catch (err) {
       console.error('Error resolving mission:', err);
     }
@@ -64,19 +80,27 @@ export default function ProviderInterface({ incidents, userLocation, alerts, pro
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', background: 'var(--bg-color)', color: 'var(--text-primary)', overflow: 'hidden' }}>
       
-      {/* Sidebar: Emergency SOS Feed */}
-      <div style={{ width: '450px', background: 'var(--bg-panel)', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', padding: '1.5rem', zIndex: 10 }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ff7b72' }}>
-            <AlertCircle size={28} />
-            SOS Responder
-          </h1>
-          <p className="subtitle" style={{ margin: 0 }}>Active Duty: {providerType.replace('_', ' ').toUpperCase()}</p>
+      {/* COMMAND SIDEBAR: CRISIS FEED */}
+      <div style={{ width: '450px', background: 'rgba(22, 27, 34, 0.85)', backdropFilter: 'blur(30px)', borderRight: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', padding: '1.5rem', zIndex: 10, boxShadow: '10px 0 30px rgba(0,0,0,0.5)' }}>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+             <ShieldAlert className="pulse-slow" size={32} color="#f85149" />
+             <h1 style={{ fontSize: '1.4rem', color: '#fff', fontWeight: '900', letterSpacing: '0.1em', margin: 0 }}>COMMANDER HUD</h1>
+          </div>
+          <div style={{ background: 'rgba(47, 129, 247, 0.1)', border: '1px solid rgba(47, 129, 247, 0.2)', padding: '0.6rem 1rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3fb950', animation: 'blink 1.5s infinite' }}></div>
+             <span style={{ fontSize: '0.7rem', fontWeight: '900', color: 'var(--accent-color)', letterSpacing: '0.05em' }}>
+               UNIT DEPLOYED: {providerType.replace('_', ' ').toUpperCase()}
+             </span>
+          </div>
         </div>
 
-        <h2 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-          Real-Time Live Feed
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+           <h2 style={{ fontSize: '0.7rem', color: '#8b949e', textTransform: 'uppercase', letterSpacing: '0.15em', margin: 0 }}>ACTIVE DISTRESS SIGNALS</h2>
+           <div style={{ fontSize: '0.65rem', background: 'rgba(240, 129, 247, 0.1)', color: '#d2a8ff', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(210, 168, 255, 0.2)' }}>
+             {sosMessages.length} PENDING
+           </div>
+        </div>
         
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingRight: '0.5rem' }}>
           {sosMessages.map((msg) => (
@@ -85,237 +109,162 @@ export default function ProviderInterface({ incidents, userLocation, alerts, pro
               onClick={() => setSelectedId(msg._id)}
               style={{ 
                 cursor: 'pointer', 
-                padding: '1.25rem', 
-                borderRadius: '12px',
-                border: selectedId === msg._id ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
-                borderLeft: `6px solid ${msg.severity === 'high' ? 'var(--danger-color)' : '#d2a8ff'}`,
-                background: selectedId === msg._id ? 'rgba(47, 129, 247, 0.1)' : 'rgba(13, 17, 23, 0.6)',
-                transition: 'all 0.2s ease',
+                padding: '1.5rem', 
+                borderRadius: '16px',
+                border: selectedId === msg._id ? '2px solid var(--accent-color)' : '1px solid rgba(255,255,255,0.05)',
+                background: selectedId === msg._id ? 'rgba(47, 129, 247, 0.08)' : 'rgba(13, 17, 23, 0.4)',
+                transform: selectedId === msg._id ? 'scale(1.02)' : 'scale(1)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 position: 'relative',
-                opacity: msg.status === 'resolved' ? 0.6 : 1
+                opacity: msg.status === 'resolved' ? 0.5 : 1,
+                boxShadow: selectedId === msg._id ? '0 10px 20px rgba(0,0,0,0.3)' : 'none'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <strong style={{ fontSize: '1.1rem', color: msg.severity === 'high' ? '#ff7b72' : '#d2a8ff' }}>
-                  {msg.type.toUpperCase()}
-                </strong>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{msg.time}</span>
+              {msg.severity === 'high' && msg.status !== 'resolved' && (
+                <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '4px', background: 'var(--danger-color)', borderRadius: '0 4px 4px 0' }}></div>
+              )}
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', alignItems: 'center' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ color: msg.severity === 'high' ? '#ff7b72' : '#d2a8ff' }}>{getDisasterIcon(msg.type)}</div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.05em', color: msg.severity === 'high' ? '#ff7b72' : '#fff' }}>
+                      {msg.type.toUpperCase()}
+                    </span>
+                 </div>
+                 <span style={{ fontSize: '0.65rem', color: '#8b949e', fontWeight: 'bold' }}>{msg.time}</span>
               </div>
               
-              <p style={{ fontSize: '0.9rem', color: '#e6edf3', marginBottom: '0.75rem', lineHeight: '1.4' }}>
-                {msg.cleanDesc.length > 80 ? msg.cleanDesc.substring(0, 80) + '...' : msg.cleanDesc}
+              <p style={{ fontSize: '0.85rem', color: '#e6edf3', marginBottom: '1rem', lineHeight: '1.5', opacity: 0.9 }}>
+                {msg.cleanDesc.length > 100 ? msg.cleanDesc.substring(0, 100) + '...' : msg.cleanDesc}
               </p>
 
-              {msg.fileName && (
-                <div style={{ marginBottom: '0.75rem', borderRadius: '8px', overflow: 'hidden', height: '80px', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                   {msg.mediaData ? (
-                     <img 
-                       src={msg.mediaData} 
-                       alt="Real-time User-Uploaded Proof" 
-                       style={{ width: '100%', height: '100%', objectFit: 'cover', border: '2px solid var(--accent-color)' }} 
-                     />
-                   ) : msg.isVideo ? (
-                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <FileVideo size={24} color="var(--accent-color)" />
-                        <span style={{ fontSize: '0.6rem', marginTop: '4px' }}>VIDEO PROOF</span>
-                     </div>
-                   ) : (
-                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <FileImage size={24} color="#8b949e" />
-                        <span style={{ fontSize: '0.6rem', marginTop: '4px' }}>ATTACHED MEDIA</span>
-                     </div>
-                   )}
-                   <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>PROOFS</div>
-                </div>
-              )}
-
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  <MapPin size={12} />
-                  <span>Sector {msg.location.lat.toFixed(3)}, {msg.location.lng.toFixed(3)}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.7rem', color: '#8b949e', fontWeight: 'bold' }}>
+                  <MapPin size={12} color="var(--accent-color)" />
+                  <span>SECTOR {msg.location.lat.toFixed(3)} / {msg.location.lng.toFixed(3)}</span>
                 </div>
                 {msg.status === 'in-progress' && (
-                   <span style={{ color: '#3fb950', fontSize: '0.75rem', fontWeight: 'bold' }}>In Progress ✓</span>
+                   <span style={{ background: 'rgba(46, 160, 67, 0.1)', color: '#3fb950', fontSize: '0.6rem', fontWeight: '900', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(46, 160, 67, 0.2)' }}>ENGAGED</span>
                 )}
-                {msg.status === 'resolved' && (
-                   <span style={{ color: '#8b949e', fontSize: '0.75rem', fontWeight: 'bold' }}>Resolved ⬢</span>
+                 {msg.status === 'resolved' && (
+                   <span style={{ color: '#8b949e', fontSize: '0.6rem', fontWeight: '900' }}>ARCHIVED</span>
                 )}
               </div>
             </div>
           ))}
-          {sosMessages.length === 0 && <p style={{ textAlign: 'center', color: '#8b949e', marginTop: '3rem' }}>No SOS alerts in queue.</p>}
         </div>
       </div>
 
-      {/* Main Map & Incident Detail Area */}
+      {/* TACTICAL MAP & HUD OVERLAY */}
       <div style={{ flex: 1, position: 'relative' }}>
         <MapComponent 
           incidents={incidents.filter(inc => inc.status !== 'resolved')} 
           userLocation={userLocation} 
           alerts={alerts}
           onSelectIncident={(inc) => setSelectedId(inc._id)}
+          routingTarget={isAccepted ? selectedIncident : null}
         />
 
-        {/* Selected SOS Mission Control Overlay */}
+        {/* MISSION CONTROL CENTER OVERLAY (Sticky Bottom) */}
         {selectedIncident && (
           <div style={{ 
             position: 'absolute', 
-            bottom: '2rem', 
-            left: '2rem', 
-            right: '2rem', 
-            background: '#161b22', 
-            border: '2px solid rgba(48, 54, 61, 0.8)',
-            borderRadius: '16px',
-            padding: '2rem',
+            bottom: '2.5rem', 
+            left: '2.5rem', 
+            right: '2.5rem', 
+            background: 'rgba(13, 17, 23, 0.85)', 
+            backdropFilter: 'blur(40px) saturate(180%)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '24px',
+            padding: '2.5rem',
             zIndex: 1000,
-            boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
             display: 'flex',
-            gap: '2.5rem',
-            transition: 'all 0.3s ease'
+            gap: '3rem',
+            animation: 'slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1)'
           }}>
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ background: isResolved ? '#8b949e' : isAccepted ? '#2ea043' : 'var(--danger-color)', padding: '0.75rem', borderRadius: '12px' }}>
-                  <Navigation size={28} color="#fff" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2rem' }}>
+                <div style={{ background: isResolved ? '#484f58' : isAccepted ? '#238636' : '#f85149', width: '64px', height: '64px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 20px ${isAccepted ? 'rgba(35, 134, 54, 0.3)' : 'rgba(248, 81, 73, 0.3)'}` }}>
+                  <Target size={32} color="#fff" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: '1.5rem', color: '#fff' }}>
-                    {selectedIncident.type.toUpperCase()} EMERGENCY {isResolved && '(RESOLVED)'}
+                   <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '900', letterSpacing: '0.05em', color: '#fff', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {selectedIncident.type.toUpperCase()} CRISIS UNIT
+                    {isAccepted && <Zap size={20} fill="#3fb950" color="#3fb950" className="blink" />}
                   </h2>
-                  <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                    {isResolved ? 'Mission Accomplished' : 'Incoming SOS Signal • Priority Response Required'}
-                    {selectedIncident.contactNumber && ` • 📞 ${selectedIncident.contactNumber}`}
-                  </p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#8b949e', fontWeight: 'bold' }}>TACTICAL SECTOR 7G</span>
+                     <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#484f58' }}></span>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--accent-color)', fontWeight: 'bold' }}>V_STREAM_ENABLED</span>
+                  </div>
                 </div>
               </div>
               
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
-                 <p style={{ flex: 1, fontSize: '1.1rem', lineHeight: '1.6', margin: 0, color: '#e6edf3' }}>
-                    {selectedIncident.description.replace(/\[Attached Media: .*?\]/, '').trim()}
-                 </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 280px', gap: '2rem', alignItems: 'start' }}>
+                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <h3 style={{ fontSize: '0.7rem', color: '#8b949e', textTransform: 'uppercase', marginBottom: '0.75rem', letterSpacing: '0.1em' }}>REPORTED SITUATION</h3>
+                    <p style={{ fontSize: '1.1rem', lineHeight: '1.6', margin: 0, color: '#e6edf3', fontWeight: '500' }}>
+                      {selectedIncident.description.replace(/\[Attached Media: .*?\]/, '').trim()}
+                    </p>
+                 </div>
                  {selectedIncident.mediaData && (
-                   <div style={{ width: '220px', height: '160px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--accent-color)', position: 'relative', boxShadow: '0 0 20px rgba(47, 129, 247, 0.4)' }}>
-                      <img 
-                        src={selectedIncident.mediaData} 
-                        alt="High-resolution User Proof" 
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                      />
-                      <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--accent-color)', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', color: '#fff', fontWeight: 'bold' }}>REAL SOS PROOF</div>
-                   </div>
-                 )}
-                 {!selectedIncident.mediaData && selectedIncident.description.includes('[Attached Media:') && (
-                    <div style={{ width: '150px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.4)' }}>
-                       <FileImage size={32} color="#8b949e" />
+                    <div style={{ position: 'relative', height: '200px', borderRadius: '16px', overflow: 'hidden', border: '2px solid var(--accent-color)', boxShadow: '0 10px 30px rgba(47, 129, 247, 0.2)' }}>
+                      <img src={selectedIncident.mediaData} alt="Visual Proof" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: '900', color: '#fff' }}>MISSION PROOF_01</div>
                     </div>
                  )}
               </div>
             </div>
 
-            <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center' }}>
+            <div style={{ width: '320px', display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '1px solid rgba(255,255,255,0.05)', paddingLeft: '3rem', justifyContent: 'center' }}>
               <button 
                 onClick={() => handleAcceptMission(selectedId)}
                 disabled={isAccepted || isResolved}
                 style={{ 
-                  background: isAccepted ? 'rgba(46, 160, 67, 0.1)' : isResolved ? 'rgba(255,255,255,0.05)' : '#2ea043', 
-                  border: (isAccepted || isResolved) ? '1px solid #2ea043' : 'none',
-                  padding: '1.25rem', 
-                  borderRadius: '10px', 
-                  color: isAccepted ? '#3fb950' : isResolved ? '#8b949e' : '#fff', 
-                  fontWeight: 'bold', 
-                  fontSize: '1rem', 
+                  background: isAccepted ? 'rgba(35, 134, 54, 0.1)' : isResolved ? 'rgba(72, 79, 88, 0.1)' : 'var(--accent-color)', 
+                  padding: '1.4rem', 
+                  borderRadius: '14px', 
+                  color: isAccepted ? '#3fb950' : '#fff', 
+                  fontWeight: '900', 
+                  fontSize: '0.9rem', 
+                  letterSpacing: '0.1em',
                   cursor: (isAccepted || isResolved) ? 'default' : 'pointer', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '0.75rem', 
-                  justifyContent: 'center' 
+                  gap: '12px', 
+                  justifyContent: 'center',
+                  border: isAccepted ? '1px solid rgba(63, 185, 80, 0.3)' : 'none',
+                  transition: 'all 0.3s ease'
                 }}
               >
-                {isAccepted ? <ShieldCheck size={20} /> : <CheckCircle size={20} />}
-                {isResolved ? 'SOLVED' : isAccepted ? 'MISSION IN PROGRESS' : 'ACCEPT MISSION'}
+                {isAccepted ? <ShieldCheck size={22} /> : <CheckCircle size={22} />}
+                {isResolved ? 'ARCHIVED' : isAccepted ? 'IN PROGRESS' : 'ACCEPT MISSION'}
               </button>
               
               {isAccepted && !isResolved && (
                 <button 
                   onClick={() => handleResolveMission(selectedId)}
-                  style={{ 
-                    background: 'rgba(46, 160, 67, 0.1)', 
-                    border: '1px solid #2ea043',
-                    padding: '1.25rem', 
-                    borderRadius: '10px', 
-                    color: '#3fb950', 
-                    fontWeight: 'bold', 
-                    fontSize: '1rem', 
-                    cursor: 'pointer',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '0.75rem', 
-                    justifyContent: 'center' 
-                  }}
+                  style={{ background: 'linear-gradient(135deg, #238636 0%, #175e24 100%)', padding: '1.4rem', borderRadius: '14px', color: '#fff', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', border: 'none', boxShadow: '0 8px 20px rgba(35, 134, 54, 0.2)' }}
                 >
-                  <CheckCheck size={20} />
-                  MARK RESOLVED
+                  <CheckCheck size={22} />
+                  MARK AS SOLVED
                 </button>
               )}
 
-              {/* Direct Communication Tools */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <a 
-                    href={selectedIncident.contactNumber ? `tel:${selectedIncident.contactNumber}` : "tel:1234567890"} 
-                    style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', padding: '1rem', borderRadius: '10px', color: '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', textDecoration: 'none' }}
-                    title="Call Reporter"
-                  >
-                    <Phone size={22} />
-                  </a>
-                  <button 
-                    onClick={() => setShowMessenger(!showMessenger)}
-                    style={{ flex: 1, background: showMessenger ? 'rgba(47, 129, 247, 0.2)' : 'rgba(255,255,255,0.05)', border: showMessenger ? '1px solid var(--accent-color)' : '1px solid var(--border-color)', padding: '1rem', borderRadius: '10px', color: '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                    title="Send Message"
-                  >
-                    <MessageSquare size={22} />
-                  </button>
-                </div>
-
-                {showMessenger && (
-                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--accent-color)' }}>
-                    <textarea 
-                      placeholder="Type a message to the victim..."
-                      value={msgText}
-                      onChange={(e) => setMsgText(e.target.value)}
-                      style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', outline: 'none', resize: 'none', height: '60px' }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                      <button 
-                        onClick={() => {
-                          if (msgText.trim()) {
-                            onSendMessage(msgText, selectedId);
-                            setMsgText('');
-                          }
-                        }}
-                        style={{ background: 'var(--accent-color)', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-                      >
-                        SEND LIVE MESSAGE
-                      </button>
-                    </div>
-                    
-                    {/* Tiny inline history */}
-                    <div style={{ marginTop: '1rem', maxHeight: '120px', overflowY: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem' }}>
-                       {messages.filter(m => m.targetId === selectedId).map((m, i) => (
-                         <div key={i} style={{ fontSize: '0.75rem', marginBottom: '0.4rem', color: m.role === 'user' ? '#8b949e' : '#3fb950' }}>
-                            <strong>{m.sender}: </strong> {m.text}
-                         </div>
-                       ))}
-                    </div>
-                  </div>
-                )}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '0.5rem' }}>
+                  <a href={`tel:${selectedIncident.contactNumber || '123'}`} style={{ flex: 1, background: 'rgba(255,255,255,0.05)', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)' }}><Phone size={24} color="#fff" /></a>
+                  <button onClick={() => setShowMessenger(!showMessenger)} style={{ flex: 1, background: showMessenger ? 'rgba(47, 129, 247, 0.15)' : 'rgba(255,255,255,0.05)', border: showMessenger ? '1px solid var(--accent-color)' : '1px solid rgba(255,255,255,0.05)', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MessageSquare size={24} color="#fff" /></button>
               </div>
 
-              <button 
-                onClick={() => setSelectedId(null)}
-                style={{ background: 'transparent', border: 'none', color: '#8b949e', cursor: 'pointer', marginTop: '0.5rem', textDecoration: 'underline' }}
-              >
-                Dismiss Overview
-              </button>
+              {showMessenger && (
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--accent-color)', marginTop: '1rem', animation: 'slideUp 0.3s ease' }}>
+                  <textarea placeholder="Direct line to victim..." value={msgText} onChange={(e) => setMsgText(e.target.value)} style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', outline: 'none', resize: 'none', height: '60px', fontSize: '0.85rem' }} />
+                  <button onClick={() => { if (msgText.trim()) { onSendMessage(msgText, selectedId); setMsgText(''); } }} style={{ width: '100%', background: 'var(--accent-color)', color: '#fff', border: 'none', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '900' }}>SEND SIGNAL</button>
+                </div>
+              )}
+
+              <button onClick={() => setSelectedId(null)} style={{ background: 'transparent', border: 'none', color: '#484f58', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold', textDecoration: 'underline' }}>MINIMIZE CONSOLE</button>
             </div>
           </div>
         )}

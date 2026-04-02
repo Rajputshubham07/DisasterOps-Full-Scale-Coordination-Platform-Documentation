@@ -84,10 +84,17 @@ function App() {
     axios.get(API_URL).then(res => setIncidents(res.data)).catch(console.error);
 
     if (navigator.geolocation) {
-       navigator.geolocation.getCurrentPosition(
-         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-         () => setUserLocation({ lat: 26.8467, lng: 80.9462 })
+       const watchId = navigator.geolocation.watchPosition(
+         (pos) => {
+           console.log("Location Update:", pos.coords);
+           setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+         },
+         () => {
+           if (!userLocation) setUserLocation({ lat: 26.8467, lng: 80.9462 });
+         },
+         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
        );
+       return () => navigator.geolocation.clearWatch(watchId);
     }
   }, []);
 
@@ -121,16 +128,17 @@ function App() {
     setProviderType(pType);
   };
 
-  const handleLogin = (username, phone) => {
+  const handleLogin = (username, phone, r) => {
     setUser(username);
     setUserPhone(phone);
+    setRole(r);
   };
 
   if (!user) {
     return <Login onLogin={handleLogin} />;
   }
 
-  if (!role) {
+  if (role === 'provider' && !providerType) {
     return (
       <RoleSelection 
         onSelectRole={handleRoleSelect} 
@@ -182,28 +190,51 @@ function App() {
            <Dashboard incidents={incidents} alerts={alerts} role={role} activeProviders={activeProviders} />
         )}
         
-        {/* Replace Overview with SOS Form natively in the sidebar for Users */}
+        {/* Replace Overview with SOS Form natively in the sidebar for Users — Sticky for rapid re-broadcast */}
         {role === 'user' && (
-           <IncidentForm onSubmit={handleReportIncident} userLocation={userLocation} />
+          <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-panel)', paddingBottom: '1rem' }}>
+            <IncidentForm onSubmit={handleReportIncident} userLocation={userLocation} />
+          </div>
         )}
 
         {/* Dynamic Alert Feed */}
         {alerts.length > 0 && (
-          <div className="glass-panel" style={{ borderColor: 'var(--danger-color)' }}>
-            <h2>{role === 'user' ? 'Active Red Alerts' : 'SOS Signal Feed'}</h2>
-            {alerts.slice(0, 5).map((alert, i) => (
-              <div key={i} className="alert-banner">
-                <AlertCircle size={24} />
-                <div>
-                  <h3>{alert.type.toUpperCase()} DANGER</h3>
-                  <p className="alert-desc">{alert.description}</p>
-                  <div className="alert-meta">
-                    <span>Severity: {alert.severity}</span>
-                    <span>Just Now</span>
+          <div className="glass-panel" style={{ 
+            borderColor: 'var(--danger-color)', 
+            maxHeight: role === 'user' ? 'min(400px, 40vh)' : 'none', 
+            overflowY: 'auto',
+            padding: 0,
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            <h2 style={{ 
+              fontSize: '0.85rem', 
+              position: 'sticky', 
+              top: 0, 
+              zIndex: 5,
+              background: 'rgba(248, 81, 73, 0.95)', 
+              color: '#fff',
+              padding: '0.75rem 1rem', 
+              margin: 0,
+              boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+            }}>
+              {role === 'user' ? 'ACTIVE RED ALERTS FEED' : 'SOS SIGNAL FEED'}
+            </h2>
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {alerts.map((alert, i) => (
+                <div key={i} className="alert-banner" style={{ margin: 0 }}>
+                  <AlertCircle size={20} />
+                  <div>
+                    <h3 style={{ fontSize: '0.8rem' }}>{alert.type.toUpperCase()} DANGER</h3>
+                    <p className="alert-desc" style={{ fontSize: '0.75rem' }}>{alert.description}</p>
+                    <div className="alert-meta">
+                      <span>Severity: {alert.severity}</span>
+                      <span>Just Now</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

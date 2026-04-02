@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -27,18 +27,82 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-export default function MapComponent({ incidents, userLocation, alerts, providers = [], onSelectIncident = null, role = null, myIncidents = [] }) {
+// Leaflet Routing Machine Integration Component
+function Routing({ from, to }) {
+  const map = useMap();
+  const routingControlRef = useRef(null);
+
+  useEffect(() => {
+    if (!map || !from || !to) return;
+    
+    let routingControl;
+    let checkInterval;
+
+    const initRouting = () => {
+      if (typeof L.Routing === 'undefined' || !L.Routing.control) {
+        console.warn("Leaflet Routing Machine not ready, retrying...");
+        return;
+      }
+      
+      clearInterval(checkInterval);
+
+      // Create the routing control
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(from.lat, from.lng),
+          L.latLng(to.lat, to.lng)
+        ],
+        lineOptions: {
+          styles: [{ color: '#2f81f7', weight: 8, opacity: 0.9 }]
+        },
+        addWaypoints: false,
+        draggableWaypoints: false,
+        fitSelectedRoutes: true,
+        showAlternatives: false,
+        createMarker: () => null, // We already have markers
+      }).addTo(map);
+
+      // Hide the routing container because it's ugly for a modern HUD
+      const container = routingControl.getContainer();
+      if (container) {
+        container.style.display = 'none';
+      }
+
+      routingControlRef.current = routingControl;
+    };
+
+    // Poll for L.Routing if not immediately available
+    if (typeof L.Routing === 'undefined') {
+      checkInterval = setInterval(initRouting, 500);
+    } else {
+      initRouting();
+    }
+
+    return () => {
+      clearInterval(checkInterval);
+      if (routingControlRef.current && map) {
+        map.removeControl(routingControlRef.current);
+      }
+    };
+  }, [map, from.lat, from.lng, to.lat, to.lng]);
+
+  return null;
+}
+
+export default function MapComponent({ incidents, userLocation, alerts, providers = [], onSelectIncident = null, role = null, myIncidents = [], routingTarget = null }) {
   const isUser = role === 'user';
   // Zoom in closer for citizens so they can clearly see their own pin
   const zoom = isUser ? 17 : 12;
 
   return (
     <MapContainer
-      center={[userLocation.lat, userLocation.lng]}
+      center={userLocation ? [userLocation.lat, userLocation.lng] : [26.8467, 80.9462]}
       zoom={zoom}
       style={{ height: '100%', width: '100%' }}
     >
-      <ChangeView center={[userLocation.lat, userLocation.lng]} zoom={zoom} />
+      {userLocation && <ChangeView center={[userLocation.lat, userLocation.lng]} zoom={zoom} />}
+      
+      {userLocation && routingTarget && <Routing from={userLocation} to={routingTarget.location} />}
 
       <TileLayer
         url="http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}"
@@ -46,9 +110,11 @@ export default function MapComponent({ incidents, userLocation, alerts, provider
       />
 
       {/* User's own location — always visible for all roles */}
-      <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-        <Popup>📍 You are here</Popup>
-      </Marker>
+      {userLocation && (
+        <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
+          <Popup>📍 You are here</Popup>
+        </Marker>
+      )}
 
       {/* User's OWN SOS circles — only visible to the citizen who filed them */}
       {isUser && myIncidents.map((inc) => (
